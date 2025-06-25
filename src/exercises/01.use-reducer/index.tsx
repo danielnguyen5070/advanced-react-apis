@@ -1,50 +1,43 @@
-import { useState } from 'react'
-
-
-// 🐨 here's where you'll implement your countReducer function.
-
-function Counter({ initialCount = 0, step = 1 }) {
-	// 🐨 replace useState with useReducer.
-	// 💰 useReducer(countReducer, initialCount)
-	const [count, setCount] = useState(initialCount)
-
-	// 💰 you can write the countReducer function above so you don't have to make
-	// any changes to the next two lines of code! Remember:
-	// The 1st argument is called "state" - the current value of count
-	// The 2nd argument is called "newState" - the value passed to setCount
-	const increment = () => setCount(count + step)
-	const decrement = () => setCount(count - step)
+function Counter() {
 	return (
-		<div className="counter">
-			<output>{count}</output>
-			<div>
-				<button onClick={decrement}>⬅️</button>
-				<button onClick={increment}>➡️</button>
+		<div className="w-full flex flex-col items-center gap-4 p-4 rounded-xl border border-gray-200 shadow-md bg-white max-w-xs mx-auto">
+			<output className="text-9xl text-blue-600">0</output>
+			<div className="flex gap-4">
+				<button
+					className=""
+				>
+					⬅️
+				</button>
+				<button
+					className=""
+				>
+					➡️
+				</button>
 			</div>
 		</div>
 	)
 }
 
 function App() {
-	const [step, setStep] = useState(1)
 
 	return (
-		<div className="app">
-			<h1>Counter:</h1>
-			<form>
-				<div>
-					<label htmlFor="step-input">Step</label>
+		<div className="bg-gray-100 flex flex-col items-center justify-top p-6">
+			<form className="mb-6">
+				<div className="flex items-center gap-3">
+					<label htmlFor="step-input" className="text-lg text-gray-700">
+						Step:
+					</label>
 					<input
 						id="step-input"
 						type="number"
-						value={step}
-						onChange={(e) => setStep(Number(e.currentTarget.value))}
+						className="w-24 px-3 bg-white py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
 					/>
 				</div>
 			</form>
-			<Counter step={step} />
+			<Counter />
 		</div>
 	)
 }
 
 export default App
+
