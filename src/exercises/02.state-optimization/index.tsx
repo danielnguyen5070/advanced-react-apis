@@ -4,8 +4,8 @@ import {
 	type BlogPost,
 	generateGradient,
 	getMatchingPosts,
-} from '../../../shared/blog-posts'
-import { setGlobalSearchParams } from '../../../shared/utils'
+} from '../../shared/blog-posts'
+import { setGlobalSearchParams } from '../../shared/utils'
 
 const getQueryParam = (params: URLSearchParams) => params.get('query') ?? ''
 

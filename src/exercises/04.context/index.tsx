@@ -1,22 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
 	type BlogPost,
 	generateGradient,
 	getMatchingPosts,
-} from '../../../shared/blog-posts'
-import { setGlobalSearchParams } from '../../../shared/utils'
+} from '../../shared/blog-posts'
+import { setGlobalSearchParams } from '../../shared/utils'
 
-const getQueryParam = (params: URLSearchParams) => params.get('query') ?? ''
+// 🦺 create a SearchParamsTuple type here that's a readonly array of two elements:
+// - the first element is a URLSearchParams instance
+// - the second element is typeof setGlobalSearchParams
+// 🐨 create a SearchParamsContext that is of this type
+// 💰 let's start with this as the default value (we'll improve it next):
+// [new URLSearchParams(window.location.search), setGlobalSearchParams]
 
-function App() {
+// 🐨 change this to SearchParamsProvider and accept children
+export function useSearchParams() {
 	const [searchParams, setSearchParamsState] = useState(
 		() => new URLSearchParams(window.location.search),
 	)
 
 	useEffect(() => {
 		function updateSearchParams() {
-			console.log('updating search params')
 			setSearchParamsState((prevParams) => {
 				const newParams = new URLSearchParams(window.location.search)
 				return prevParams.toString() === newParams.toString()
@@ -28,35 +33,42 @@ function App() {
 		return () => window.removeEventListener('popstate', updateSearchParams)
 	}, [])
 
-	function setSearchParams(...args: Parameters<typeof setGlobalSearchParams>) {
-		console.log('setting search params')
-		const searchParams = setGlobalSearchParams(...args)
-		setSearchParamsState((prevParams) => {
-			return prevParams.toString() === searchParams.toString()
-				? prevParams
-				: searchParams
-		})
-		return searchParams
-	}
+	const setSearchParams = useCallback(
+		(...args: Parameters<typeof setGlobalSearchParams>) => {
+			const searchParams = setGlobalSearchParams(...args)
+			setSearchParamsState((prevParams) => {
+				return prevParams.toString() === searchParams.toString()
+					? prevParams
+					: searchParams
+			})
+			return searchParams
+		},
+		[],
+	)
 
-	const query = getQueryParam(searchParams)
-	console.log('rerendering component for new query', query)
+	// 🐨 instead of returning this, render the SearchParamsContext and
+	// provide this tuple as the value
+	// 💰 make sure to render the children as well!
+	return [searchParams, setSearchParams] as const
+}
 
+// 🐨 create a useSearchParams hook here that returns use(SearchParamsContext)
+
+const getQueryParam = (params: URLSearchParams) => params.get('query') ?? ''
+
+function App() {
 	return (
+		// 🐨 wrap this in the SearchParamsProvider
 		<div className="app">
-			<Form query={query} setSearchParams={setSearchParams} />
-			<MatchingPosts query={query} />
+			<Form />
+			<MatchingPosts />
 		</div>
 	)
 }
 
-function Form({
-	query,
-	setSearchParams,
-}: {
-	query: string
-	setSearchParams: typeof setGlobalSearchParams
-}) {
+function Form() {
+	const [searchParams, setSearchParams] = useSearchParams()
+	const query = getQueryParam(searchParams)
 	const words = query.split(' ').map((w) => w.trim())
 
 	const dogChecked = words.includes('dog')
@@ -72,12 +84,7 @@ function Form({
 	}
 
 	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault()
-				setSearchParams({ query })
-			}}
-		>
+		<form onSubmit={(e) => e.preventDefault()}>
 			<div>
 				<label htmlFor="searchInput">Search:</label>
 				<input
@@ -118,12 +125,13 @@ function Form({
 					🐛 caterpillar
 				</label>
 			</div>
-			<button type="submit">Submit</button>
 		</form>
 	)
 }
 
-function MatchingPosts({ query }: { query: string }) {
+function MatchingPosts() {
+	const [searchParams] = useSearchParams()
+	const query = getQueryParam(searchParams)
 	const matchingPosts = getMatchingPosts(query)
 
 	return (

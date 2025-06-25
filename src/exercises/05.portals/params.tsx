@@ -1,5 +1,5 @@
 import { createContext, useCallback, use, useEffect, useState } from 'react'
-import { setGlobalSearchParams } from '../../../shared/utils'
+import { setGlobalSearchParams } from '../../shared/utils'
 
 type SearchParamsTuple = readonly [
 	URLSearchParams,

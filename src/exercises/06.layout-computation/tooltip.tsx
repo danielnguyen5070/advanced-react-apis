@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 type Position = {
@@ -18,7 +18,9 @@ export default function Tooltip({
 	const ref = useRef<HTMLDivElement | null>(null)
 	const [tooltipHeight, setTooltipHeight] = useState(0)
 
-	useLayoutEffect(() => {
+	// 🐨 change this to useLayoutEffect to ensure it runs synchronously after the
+	// DOM has been updated so the user doesn't see the tooltip jump around.
+	useEffect(() => {
 		const rect = ref.current?.getBoundingClientRect()
 		if (!rect) return
 		const { height } = rect
@@ -39,7 +41,7 @@ export default function Tooltip({
 	}
 
 	// This artificially slows down rendering
-	let now = performance.now()
+	const now = performance.now()
 	while (performance.now() - now < 100) {
 		// Do nothing for a bit...
 	}

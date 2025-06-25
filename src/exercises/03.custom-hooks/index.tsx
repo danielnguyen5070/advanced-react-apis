@@ -1,22 +1,19 @@
-import { createContext, useEffect, useState, use, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
 	type BlogPost,
 	generateGradient,
 	getMatchingPosts,
-} from '../../../shared/blog-posts'
-import { setGlobalSearchParams } from '../../../shared/utils'
+} from '../../shared/blog-posts'
+import { setGlobalSearchParams } from '../../shared/utils'
 
-type SearchParamsTuple = readonly [
-	URLSearchParams,
-	typeof setGlobalSearchParams,
-]
-const SearchParamsContext = createContext<SearchParamsTuple>([
-	new URLSearchParams(window.location.search),
-	setGlobalSearchParams,
-])
+const getQueryParam = (params: URLSearchParams) => params.get('query') ?? ''
 
-function SearchParamsProvider({ children }: { children: React.ReactNode }) {
+// 🐨 create a function called useSearchParams here and move much of what's
+// below into this hook.
+
+function App() {
+	// 🐨 move everything from here to the next 🐨 into the new function
 	const [searchParams, setSearchParamsState] = useState(
 		() => new URLSearchParams(window.location.search),
 	)
@@ -34,49 +31,36 @@ function SearchParamsProvider({ children }: { children: React.ReactNode }) {
 		return () => window.removeEventListener('popstate', updateSearchParams)
 	}, [])
 
-	const setSearchParams = useCallback(
-		(...args: Parameters<typeof setGlobalSearchParams>) => {
-			const searchParams = setGlobalSearchParams(...args)
-			setSearchParamsState((prevParams) => {
-				return prevParams.toString() === searchParams.toString()
-					? prevParams
-					: searchParams
-			})
-			return searchParams
-		},
-		[],
-	)
+	function setSearchParams(...args: Parameters<typeof setGlobalSearchParams>) {
+		const searchParams = setGlobalSearchParams(...args)
+		setSearchParamsState((prevParams) => {
+			return prevParams.toString() === searchParams.toString()
+				? prevParams
+				: searchParams
+		})
+		return searchParams
+	}
+	// 🐨 move everything from the previous 🐨 to here into the new function
 
-	const searchParamsTuple = [searchParams, setSearchParams] as const
+	// 🐨 call useSearchParams to get the searchParams and setSearchParams functions
 
-	return (
-		<SearchParamsContext value={searchParamsTuple}>
-			{children}
-		</SearchParamsContext>
-	)
-}
-
-export function useSearchParams() {
-	return use(SearchParamsContext)
-}
-
-const getQueryParam = (params: URLSearchParams) => params.get('query') ?? ''
-
-function App() {
-	return (
-		<SearchParamsProvider>
-			<div className="app">
-				<Form />
-				<MatchingPosts />
-			</div>
-		</SearchParamsProvider>
-	)
-}
-
-function Form() {
-	const [searchParams, setSearchParams] = useSearchParams()
 	const query = getQueryParam(searchParams)
 
+	return (
+		<div className="app">
+			<Form query={query} setSearchParams={setSearchParams} />
+			<MatchingPosts query={query} />
+		</div>
+	)
+}
+
+function Form({
+	query,
+	setSearchParams,
+}: {
+	query: string
+	setSearchParams: typeof setGlobalSearchParams
+}) {
 	const words = query.split(' ').map((w) => w.trim())
 
 	const dogChecked = words.includes('dog')
@@ -137,9 +121,7 @@ function Form() {
 	)
 }
 
-function MatchingPosts() {
-	const [searchParams] = useSearchParams()
-	const query = getQueryParam(searchParams)
+function MatchingPosts({ query }: { query: string }) {
 	const matchingPosts = getMatchingPosts(query)
 
 	return (

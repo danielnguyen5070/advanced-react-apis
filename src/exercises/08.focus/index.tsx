@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 
-
 function EditableText({
 	id,
 	initialValue = '',

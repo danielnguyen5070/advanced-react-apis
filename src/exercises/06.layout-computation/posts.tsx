@@ -3,7 +3,7 @@ import {
 	type BlogPost,
 	generateGradient,
 	getMatchingPosts,
-} from '../../../shared/blog-posts'
+} from '../../shared/blog-posts'
 import { getQueryParam, useSearchParams } from './params'
 import { ButtonWithTooltip } from './tooltip'
 
