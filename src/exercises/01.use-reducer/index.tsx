@@ -1,4 +1,5 @@
 function Counter() {
+	// useReducer hook to manage the counter state
 	return (
 		<div className="w-full flex flex-col items-center gap-4 p-4 rounded-xl border border-gray-200 shadow-md bg-white max-w-xs mx-auto">
 			<output className="text-9xl text-blue-600">0</output>
@@ -19,7 +20,6 @@ function Counter() {
 }
 
 function App() {
-
 	return (
 		<div className="bg-gray-100 flex flex-col items-center justify-top p-6">
 			<form className="mb-6">

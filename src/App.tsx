@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 
 import UseReducer from './exercises/01.use-reducer'
+import UseReducerGame from './exercises/01.use-reducer-game'
 import StateOptimization from './exercises/02.state-optimization'
 import CustomHooks from './exercises/03.custom-hooks'
 import Context from './exercises/04.context'
@@ -14,6 +15,7 @@ import SyncExternal from './exercises/09.sync-external'
 
 const routes = [
   { path: "/advanced-state-management", element: <UseReducer /> },
+  { path: "/advanced-state-management-game", element: <UseReducerGame /> },
   { path: "/state-optimization", element: <StateOptimization /> },
   { path: "/custom-hook", element: <CustomHooks /> },
   { path: "/share-context", element: <Context /> },

@@ -4,7 +4,11 @@ import { NavLink } from 'react-router-dom';
 const menuItems = [
     {
         label: 'Advanced State Management',
-         path: '/advanced-state-management',
+        path: '/advanced-state-management',
+    },
+    {
+        label: 'ASM Game',
+        path: '/advanced-state-management-game',
     },
     {
         label: 'State Optimization',
