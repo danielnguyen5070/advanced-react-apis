@@ -155,5 +155,14 @@ function Post({ post }: { post: BlogPost }) {
 	)
 }
 
+// Write a TypeScript function that updates the current browser URL’s query parameters (search params) without reloading the page. The function should:
+// Accept an object of key-value pairs where each value is either a string or null.
+// If a key's value is null, remove that query parameter from the URL.
+// If a key's value is a string, add or update the query parameter in the URL.
+// Accept an optional options object with a replace boolean flag:
+// 	- If replace is true, use window.history.replaceState to update the URL.
+// 	- Otherwise, use window.history.pushState.
+// Return the updated URLSearchParams object.
+
 export default App
 
