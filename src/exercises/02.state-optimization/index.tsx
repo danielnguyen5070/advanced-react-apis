@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react'
 import { BlogPost, getMatchingPosts } from '../../shared/blog-posts'
 
-function getQueryParam(): string {
-	const params = new URLSearchParams(window.location.search)
+function getQueryParam(params: URLSearchParams): string {
 	return params.get("query") || ''
 }
 
 function App() {
-	const [query, setQuery] = useState(getQueryParam)
+	const [queryParamsState, setQueryParamsState] = useState(new URLSearchParams(window.location.search))
+	const query = getQueryParam(queryParamsState)
 
 	useEffect(() => {
 		const handlePopState = () => {
-			setQuery(getQueryParam())
+			setQueryParamsState((prev) => {
+				const newParams = new URLSearchParams(window.location.search)
+				return prev.toString() === newParams.toString() ? prev : newParams
+			})
 		}
 		window.addEventListener('popstate', handlePopState)
 		return () => {
@@ -19,15 +22,29 @@ function App() {
 		}
 	}, [])
 
+	function setSearchQuery(...args: Parameters<typeof updateQueryParams>) {
+		console.log('setting search params')
+		const updatedParams = updateQueryParams(...args)
+		setQueryParamsState((prev) => {
+			console.log('Previous query params:', prev.toString())
+			console.log('Previous query params:', updatedParams.toString())
+			return prev.toString() === updatedParams.toString()
+				? prev
+				: updatedParams
+		})
+		return updatedParams
+	}
+
+	console.log('Current query:', query)
 	return (
 		<div>
-			<SearchForm query={query} setQuery={setQuery} />
+			<SearchForm query={query} setQuery={setSearchQuery} />
 			<MatchingPosts query={query} />
 		</div>
 	)
 }
 
-function SearchForm({ query, setQuery }: { query: string; setQuery: (query: string) => void }) {
+function SearchForm({ query, setQuery }: { query: string; setQuery: typeof updateQueryParams }) {
 	const words = query.split(' ')
 	const isCheckDog = words.includes('dog')
 	const isCheckCat = words.includes('cat')
@@ -45,14 +62,12 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: (query: stri
 				currentTags.splice(index, 1)
 			}
 		}
-		setQuery(currentTags.join(' '))
+		setQuery({query: currentTags.join(' ')}, { replace: true })
 	}
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault()
-		const params = new URLSearchParams(window.location.search)
-		params.set("query", query)
-		window.history.pushState({}, '', `?${params.toString()}`)
+		setQuery({query: query}, { replace: false })
 	}
 	return (
 		<form onSubmit={handleSubmit}>
@@ -66,7 +81,7 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: (query: stri
 					className="w-full p-2 border rounded"
 					placeholder="Search posts..."
 					value={query}
-					onChange={(e) => setQuery(e.target.value)}
+					onChange={(e) => setQuery({ query: e.target.value }, { replace: true })}
 				/>
 			</div>
 			<div className="mb-4">
@@ -163,6 +178,25 @@ function Post({ post }: { post: BlogPost }) {
 // 	- If replace is true, use window.history.replaceState to update the URL.
 // 	- Otherwise, use window.history.pushState.
 // Return the updated URLSearchParams object.
+function updateQueryParams(params: Record<string, string | null>, options?: { replace?: boolean }): URLSearchParams {
+	const urlParams = new URLSearchParams(window.location.search)
+
+	for (const [key, value] of Object.entries(params)) {
+		if (value === null) {
+			urlParams.delete(key)
+		} else {
+			urlParams.set(key, value)
+		}
+	}
+
+	if (options?.replace) {
+		window.history.replaceState({}, '', `?${urlParams.toString()}`)
+	} else {
+		window.history.pushState({}, '', `?${urlParams.toString()}`)
+	}
+
+	return urlParams
+}
 
 export default App
 
