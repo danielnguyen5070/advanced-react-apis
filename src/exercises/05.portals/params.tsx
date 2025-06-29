@@ -1,65 +1,57 @@
-import { createContext, useCallback, use, useEffect, useState } from 'react'
-import { setGlobalSearchParams } from '../../shared/utils'
+import React, { useState, useEffect, useCallback } from 'react'
+import { updateQueryParams } from './utils'
 
-type SearchParamsTuple = readonly [
-	URLSearchParams,
-	typeof setGlobalSearchParams,
+function getQueryParam(params: URLSearchParams): string {
+    return params.get("query") || ''
+}
+
+type SearchParamsType = readonly [
+    URLSearchParams,
+    typeof updateQueryParams
 ]
-const SearchParamsContext = createContext<SearchParamsTuple | null>(null)
 
-export function SearchParamsProvider({
-	children,
-}: {
-	children: React.ReactNode
-}) {
-	const [searchParams, setSearchParamsState] = useState(
-		() => new URLSearchParams(window.location.search),
-	)
+const SearchParamsContext = React.createContext<SearchParamsType | null>(null)
 
-	useEffect(() => {
-		function updateSearchParams() {
-			setSearchParamsState((prevParams) => {
-				const newParams = new URLSearchParams(window.location.search)
-				return prevParams.toString() === newParams.toString()
-					? prevParams
-					: newParams
-			})
-		}
-		window.addEventListener('popstate', updateSearchParams)
-		return () => window.removeEventListener('popstate', updateSearchParams)
-	}, [])
 
-	const setSearchParams = useCallback(
-		(...args: Parameters<typeof setGlobalSearchParams>) => {
-			const searchParams = setGlobalSearchParams(...args)
-			setSearchParamsState((prevParams) => {
-				return prevParams.toString() === searchParams.toString()
-					? prevParams
-					: searchParams
-			})
-			return searchParams
-		},
-		[],
-	)
+function SearchParamsProvider({ children }: { children: React.ReactNode }) {
+    const [queryParamsState, setQueryParamsState] = useState(new URLSearchParams(window.location.search))
+    useEffect(() => {
+        const handlePopState = () => {
+            setQueryParamsState((prev) => {
+                const newParams = new URLSearchParams(window.location.search)
+                return prev.toString() === newParams.toString() ? prev : newParams
+            })
+        }
+        window.addEventListener('popstate', handlePopState)
+        return () => {
+            window.removeEventListener('popstate', handlePopState)
+        }
+    }, [])
 
-	const searchParamsTuple = [searchParams, setSearchParams] as const
-
-	return (
-		<SearchParamsContext value={searchParamsTuple}>
-			{children}
-		</SearchParamsContext>
-	)
+    const setSearchQuery = useCallback(
+        (...args: Parameters<typeof updateQueryParams>) => {
+            const updatedParams = updateQueryParams(...args)
+            setQueryParamsState((prev) => {
+                return prev.toString() === updatedParams.toString()
+                    ? prev
+                    : updatedParams
+            })
+            return updatedParams
+        }, [])
+    const value = [queryParamsState, setSearchQuery] as const
+    return (
+        <SearchParamsContext.Provider value={value}>
+            {children}
+        </SearchParamsContext.Provider>
+    )
 }
 
-export function useSearchParams() {
-	const context = use(SearchParamsContext)
-	if (!context) {
-		throw new Error(
-			'useSearchParams must be used within a SearchParamsProvider',
-		)
-	}
-	return context
+function useSearchParams() {
+    const context = React.useContext(SearchParamsContext)
+    if (!context) {
+        throw new Error('useSearchParams must be used within a SearchParamsProvider')
+    }
+    return context
 }
 
-export const getQueryParam = (params: URLSearchParams) =>
-	params.get('query') ?? ''
+export { useSearchParams, SearchParamsContext, SearchParamsProvider, getQueryParam }

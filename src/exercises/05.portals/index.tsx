@@ -1,9 +1,20 @@
 import React from 'react'
+import SearchForm from './form'
+import { MatchingPosts } from './post'
+import { SearchParamsProvider } from './params'
 
-const index = () => {
+function App() {
   return (
-	<div>index</div>
+    <div>
+      <SearchParamsProvider>
+        <div>
+          <SearchForm />
+          <MatchingPosts />
+        </div>
+      </SearchParamsProvider>
+    </div>
   )
 }
 
-export default index
+export default App
+
