@@ -1,19 +1,22 @@
-import { useEffect, useReducer } from 'react'
-import { ErrorBoundary } from 'react-error-boundary'
+import React, { useEffect, useReducer } from 'react'
+import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
+
+type Player = 'X' | 'O'
+type Squares = Array<Player | null>
+type GameState = {
+	history: Array<Squares>
+	currentStep: number
+}
+type GameAction = { type: 'SET_SQUARES', squares: Squares }
+	| { type: 'SET_STEP', step: number }
+	| { type: 'RESTART' }
 
 const defaultState = {
 	history: [Array(9).fill(null)],
 	currentStep: 0,
 }
 
-type Player = 'X' | 'O'
-type Squares = Array<Player | null>
-type GameState = {	
-	history: Array<Squares>
-	currentStep: number
-}
-
-function initReducer() {
+function initGameReducer() {
 	const storedSquares = localStorage.getItem('state')
 	try {
 		return storedSquares ? JSON.parse(storedSquares) : defaultState
@@ -22,66 +25,67 @@ function initReducer() {
 	}
 }
 
-type GameAction= 
-	| { type: "SELECT_SQUARE", index: number } | { type: "RESTART" }
-	| { type: "GO_TO_STEP", step: number }
-	| { type: "RESTART" }
-
-function reducerHandle(state: GameState, action: GameAction): GameState {
-	const { type } = action
-	switch (type) {
-		case "SELECT_SQUARE": {
-			const { index } = action
-			const squares = state.history[state.currentStep]
-			if (squares[index] || calculateWinner(squares)) return state
-			
-			const newSquares = squares.slice()
-			newSquares[index] = calculateNextValue(squares)
+function gameReducer(state: GameState, action: GameAction) {
+	switch (action.type) {
+		case 'SET_SQUARES': {
 			const newHistory = state.history.slice(0, state.currentStep + 1)
-			newHistory.push(newSquares)
-
+			newHistory.push(action.squares)
 			return {
+				...state,
 				history: newHistory,
 				currentStep: newHistory.length - 1,
 			}
 		}
-		case "RESTART": {
-			return defaultState
-		}
-		case "GO_TO_STEP": {
-			const { step } = action
+		case 'SET_STEP': {
 			return {
 				...state,
-				currentStep: step,
+				currentStep: action.step,
 			}
 		}
+		case 'RESTART': {
+			return defaultState
+		}
 		default:
-			return state
+			throw new Error('Unknown action type')
 	}
 }
+
 function Board() {
-	const [state, setState] = useReducer(reducerHandle, null, initReducer)
+	const [state, dispatch] = useReducer(gameReducer, null, initGameReducer)
 	const { history, currentStep } = state
 	const squares = history[currentStep]
 	const status = calculateStatus(squares)
+	const nextValue = calculateNextValue(squares)
 
 	useEffect(() => {
 		localStorage.setItem('state', JSON.stringify(state))
 	}, [state])
 
+	function handleClick(i: number) {
+		if (squares[i] || calculateWinner(squares)) return
+		const newSquares = squares.slice()
+		newSquares[i] = nextValue
+
+		const newHistory = history.slice(0, currentStep + 1)
+		newHistory.push(newSquares)
+		dispatch({ type: 'SET_SQUARES', squares: newSquares })
+	}
+
 	function renderSquare(i: number) {
 		return (
 			<button
-				onClick={() => {
-					setState({ type: "SELECT_SQUARE", index: i })
-				}}
+				onClick={() => handleClick(i)}
 				className="w-20 h-20 text-2xl font-semibold border border-gray-300 hover:bg-gray-100 flex items-center justify-center transition-all duration-150"
 			>
 				{squares[i]}
 			</button>
 		)
 	}
-	
+
+	function restartGame() {
+		dispatch({ type: 'RESTART' })
+		localStorage.removeItem('state')
+	}
 	return (
 		<div className="flex flex-col items-center gap-4">
 			<div className="text-xl font-bold text-gray-700">{status}</div>
@@ -99,53 +103,50 @@ function Board() {
 			</div>
 
 			<button
-				onClick={() => setState({ type: "RESTART" })}
+				onClick={restartGame}
 				className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
 			>
 				Restart
 			</button>
 
-			<div className='mt-4 flex flex-col gap-2'>
-				{
-					history.map((_, step) => (
-						<button
-							key={step}
-							onClick={() => setState({ type: "GO_TO_STEP", step })}
-							className={`px-2 py-1 ${step === currentStep ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} rounded hover:bg-blue-600 hover:text-white transition`}
-						>
-							{step === 0 ? 'Go to Start' : `Go to Move #${step}`}
-						</button>
-					))
-				}
+			<div className='mt-4 flex flex-col'>
+				{history.map((_, step) => (
+					<button
+						key={step}
+						onClick={() => dispatch({ type: 'SET_STEP', step })}
+						className={`px-2 py-1 m-1 rounded ${step === currentStep ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+					>
+						{step === 0 ? 'Go to game start' : `Go to move #${step}`}
+					</button>
+				))}
 			</div>
 		</div>
 	)
 }
 
-function Fallback({ error, resetErrorBoundary }: { error: Error, resetErrorBoundary: () => void }) {
-	function handleRetry() {
-		localStorage.setItem('state', JSON.stringify(defaultState))
-		resetErrorBoundary()	
+function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+	function handleError() {
+		resetErrorBoundary()
+		localStorage.removeItem('state')
 	}
 	return (
-		<div className="text-red-500">
-			An error occurred. Please try refreshing the page.
-			{error.message && <div className="mt-2">Error: {error.message}</div>}
+		<div className="p-4 bg-red-100 text-red-700 rounded">
+			<h2 className="font-bold">Something went wrong:</h2>
+			<p>{error.message}</p>
 			<button
-				onClick={handleRetry}
-				className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+				onClick={handleError}
+				className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
 			>
 				Try again
 			</button>
 		</div>
-	)	
+	)
 }
-
 function App() {
 	return (
 		<div className="min-h-screen flex items-start justify-center bg-gray-50">
 			<div className="p-6 bg-white rounded-lg shadow-md">
-				<ErrorBoundary FallbackComponent={Fallback}>
+				<ErrorBoundary FallbackComponent={ErrorFallback}>
 					<Board />
 				</ErrorBoundary>
 			</div>

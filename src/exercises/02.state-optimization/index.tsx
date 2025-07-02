@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { BlogPost, getMatchingPosts } from '../../shared/blog-posts'
 
-function getQueryParam(params: URLSearchParams): string {
+function getQueryParam(): string {
+	const params = new URLSearchParams(window.location.search)
 	return params.get("query") || ''
 }
 
 function App() {
-	const [queryParamsState, setQueryParamsState] = useState(new URLSearchParams(window.location.search))
-	const query = getQueryParam(queryParamsState)
+	const [query, setQuery] = useState(getQueryParam)
 
 	useEffect(() => {
 		const handlePopState = () => {
-			setQueryParamsState((prev) => {
-				const newParams = new URLSearchParams(window.location.search)
-				return prev.toString() === newParams.toString() ? prev : newParams
-			})
+			setQuery(getQueryParam())
 		}
 		window.addEventListener('popstate', handlePopState)
 		return () => {
@@ -22,29 +19,15 @@ function App() {
 		}
 	}, [])
 
-	function setSearchQuery(...args: Parameters<typeof updateQueryParams>) {
-		console.log('setting search params')
-		const updatedParams = updateQueryParams(...args)
-		setQueryParamsState((prev) => {
-			console.log('Previous query params:', prev.toString())
-			console.log('Previous query params:', updatedParams.toString())
-			return prev.toString() === updatedParams.toString()
-				? prev
-				: updatedParams
-		})
-		return updatedParams
-	}
-
-	console.log('Current query:', query)
 	return (
 		<div>
-			<SearchForm query={query} setQuery={setSearchQuery} />
+			<SearchForm query={query} setQuery={setQuery} />
 			<MatchingPosts query={query} />
 		</div>
 	)
 }
 
-function SearchForm({ query, setQuery }: { query: string; setQuery: typeof updateQueryParams }) {
+function SearchForm({ query, setQuery }: { query: string; setQuery: (query: string) => void }) {
 	const words = query.split(' ')
 	const isCheckDog = words.includes('dog')
 	const isCheckCat = words.includes('cat')
@@ -62,12 +45,14 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: typeof updat
 				currentTags.splice(index, 1)
 			}
 		}
-		setQuery({query: currentTags.join(' ')}, { replace: true })
+		setQuery(currentTags.join(' '))
 	}
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault()
-		setQuery({query: query}, { replace: false })
+		const params = new URLSearchParams(window.location.search)
+		params.set("query", query)
+		window.history.pushState({}, '', `?${params.toString()}`)
 	}
 	return (
 		<form onSubmit={handleSubmit}>
@@ -81,7 +66,7 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: typeof updat
 					className="w-full p-2 border rounded"
 					placeholder="Search posts..."
 					value={query}
-					onChange={(e) => setQuery({ query: e.target.value }, { replace: true })}
+					onChange={(e) => setQuery(e.target.value)}
 				/>
 			</div>
 			<div className="mb-4">
@@ -168,34 +153,6 @@ function Post({ post }: { post: BlogPost }) {
 			</div>
 		</div>
 	)
-}
-
-// Write a TypeScript function that updates the current browser URL’s query parameters (search params) without reloading the page. The function should:
-// Accept an object of key-value pairs where each value is either a string or null.
-// If a key's value is null, remove that query parameter from the URL.
-// If a key's value is a string, add or update the query parameter in the URL.
-// Accept an optional options object with a replace boolean flag:
-// 	- If replace is true, use window.history.replaceState to update the URL.
-// 	- Otherwise, use window.history.pushState.
-// Return the updated URLSearchParams object.
-function updateQueryParams(params: Record<string, string | null>, options?: { replace?: boolean }): URLSearchParams {
-	const urlParams = new URLSearchParams(window.location.search)
-
-	for (const [key, value] of Object.entries(params)) {
-		if (value === null) {
-			urlParams.delete(key)
-		} else {
-			urlParams.set(key, value)
-		}
-	}
-
-	if (options?.replace) {
-		window.history.replaceState({}, '', `?${urlParams.toString()}`)
-	} else {
-		window.history.pushState({}, '', `?${urlParams.toString()}`)
-	}
-
-	return urlParams
 }
 
 export default App
