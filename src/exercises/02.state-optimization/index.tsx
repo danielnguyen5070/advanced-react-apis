@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import { BlogPost, getMatchingPosts } from '../../shared/blog-posts'
 
-function getQueryParam(): string {
-	const params = new URLSearchParams(window.location.search)
+function getQueryParam(params: URLSearchParams): string {
 	return params.get("query") || ''
 }
 
 function App() {
-	const [query, setQuery] = useState(getQueryParam)
-
+	const [params, setParams] = useState(new URLSearchParams(window.location.search))
+	const query = getQueryParam(params)
 	useEffect(() => {
 		const handlePopState = () => {
-			setQuery(getQueryParam())
+			setParams((prevParams) => {
+				const newParams = new URLSearchParams(window.location.search)
+				if (prevParams.toString() !== newParams.toString()) {
+					return newParams
+				}
+				return prevParams
+			})
 		}
 		window.addEventListener('popstate', handlePopState)
 		return () => {
@@ -19,6 +24,19 @@ function App() {
 		}
 	}, [])
 
+	function setQuery(...args: Parameters<typeof updateQueryParams>) {
+		console.log('setQuery called with:', ...args)
+		const newParams = updateQueryParams(...args)
+		setParams((prevParams) => {
+			if (prevParams.toString() !== newParams.toString()) {
+				return newParams
+			}
+			return prevParams
+		})
+		return newParams
+	}
+
+	console.log('App rendered with query:', query)
 	return (
 		<div>
 			<SearchForm query={query} setQuery={setQuery} />
@@ -27,7 +45,7 @@ function App() {
 	)
 }
 
-function SearchForm({ query, setQuery }: { query: string; setQuery: (query: string) => void }) {
+function SearchForm({ query, setQuery }: { query: string; setQuery: typeof updateQueryParams }) {
 	const words = query.split(' ')
 	const isCheckDog = words.includes('dog')
 	const isCheckCat = words.includes('cat')
@@ -45,14 +63,12 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: (query: stri
 				currentTags.splice(index, 1)
 			}
 		}
-		setQuery(currentTags.join(' '))
+		setQuery({ query: currentTags.join(' ') }, { replace: true })
 	}
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault()
-		const params = new URLSearchParams(window.location.search)
-		params.set("query", query)
-		window.history.pushState({}, '', `?${params.toString()}`)
+		setQuery({ query }, { replace: false })
 	}
 	return (
 		<form onSubmit={handleSubmit}>
@@ -66,7 +82,7 @@ function SearchForm({ query, setQuery }: { query: string; setQuery: (query: stri
 					className="w-full p-2 border rounded"
 					placeholder="Search posts..."
 					value={query}
-					onChange={(e) => setQuery(e.target.value)}
+					onChange={(e) => setQuery({ query: e.target.value }, { replace: true })}
 				/>
 			</div>
 			<div className="mb-4">
@@ -155,5 +171,33 @@ function Post({ post }: { post: BlogPost }) {
 	)
 }
 
+// Write a TypeScript function that updates the current browser URL’s query parameters (search params) without reloading the page. The function should:
+// Accept an object of key-value pairs where each value is either a string or null.
+// If a key's value is null, remove that query parameter from the URL.
+// If a key's value is a string, add or update the query parameter in the URL.
+// Accept an optional options object with a replace boolean flag:
+// 	- If replace is true, use window.history.replaceState to update the URL.
+// 	- Otherwise, use window.history.pushState.
+// Return the updated URLSearchParams object.
+function updateQueryParams(params: Record<string, string | null>, options?: { replace?: boolean }): URLSearchParams {
+	const urlParams = new URLSearchParams(window.location.search)
+
+	for (const [key, value] of Object.entries(params)) {
+		if (value === null) {
+			urlParams.delete(key)
+		} else {
+			urlParams.set(key, value)
+		}
+	}
+
+	const newUrl = `?${urlParams.toString()}`
+	if (options?.replace) {
+		window.history.replaceState({}, '', newUrl)
+	} else {
+		window.history.pushState({}, '', newUrl)
+	}
+
+	return urlParams
+}
 export default App
 
