@@ -1,59 +1,62 @@
-import { useState } from 'react'
-import {
-	type BlogPost,
-	generateGradient,
-	getMatchingPosts,
-} from '../../shared/blog-posts'
-import { getQueryParam, useSearchParams } from './params'
-import { ButtonWithTooltip } from './tooltip'
+
+import React, { useState } from 'react'
+import { useSearchParams } from './handleForm'
+import { getQueryParam } from './utils'
+import { BlogPost, getMatchingPosts } from '../../shared/blog-posts'
+import { ButtonWithTooltip } from './buttonTooltip'
 
 export function MatchingPosts() {
-	const [searchParams] = useSearchParams()
-	const query = getQueryParam(searchParams)
-	const matchingPosts = getMatchingPosts(query)
-
-	return (
-		<ul className="post-list">
-			{matchingPosts.map((post) => (
-				<Card key={post.id} post={post} />
-			))}
-		</ul>
-	)
+    const [params] = useSearchParams()
+    const query = getQueryParam(params)
+    const posts = getMatchingPosts(query)
+    return (
+        <div className="space-y-4">
+            {posts.map(post => (
+                <Post
+                    key={post.id}
+                    post={post}
+                />
+            ))}
+        </div>
+    )
 }
 
-function Card({ post }: { post: BlogPost }) {
-	const [isFavorited, setIsFavorited] = useState(false)
-	return (
-		<li>
-			{isFavorited ? (
-				<ButtonWithTooltip
-					tooltipContent="Remove favorite"
-					onClick={() => setIsFavorited(false)}
-				>
-					❤️
-				</ButtonWithTooltip>
-			) : (
-				<ButtonWithTooltip
-					tooltipContent="Add favorite"
-					onClick={() => setIsFavorited(true)}
-				>
-					🤍
-				</ButtonWithTooltip>
-			)}
-			<div
-				className="post-image"
-				style={{ background: generateGradient(post.id) }}
-			/>
-			<a
-				href={post.id}
-				onClick={(event) => {
-					event.preventDefault()
-					alert(`Great! Let's go to ${post.id}!`)
-				}}
-			>
-				<h2>{post.title}</h2>
-				<p>{post.description}</p>
-			</a>
-		</li>
-	)
+function Post({ post }: { post: BlogPost }) {
+    const [isFavorite, setFavorite] = useState<boolean>(false)
+    return (
+        <div
+            key={post.id}
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: post.color }}
+        >
+            <div>
+                {isFavorite ? (
+                    <ButtonWithTooltip
+                        tooltipContent='Remove from favorites'
+                        onClick={() => setFavorite(false)}
+                    >
+                        ❤️
+                    </ButtonWithTooltip>
+                ) : (
+                    <ButtonWithTooltip tooltipContent='Add to favorites'
+                        onClick={() => setFavorite(true)}
+                    >
+                        🤍
+                    </ButtonWithTooltip>
+                )}
+            </div>
+            <h2 className="text-xl font-bold">{post.title}</h2>
+            <p className="text-gray-700">{post.description}</p>
+            <div className="mt-2">
+                {post.tags.map(tag => (
+                    <span
+                        key={tag}
+                        className="inline-block bg-gray-200 text-gray-800 px-2 py-1 rounded-full text-sm mr-2"
+                    >
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        </div >
+    )
 }
