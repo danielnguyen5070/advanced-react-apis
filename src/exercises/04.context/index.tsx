@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, } from 'react'
 import { BlogPost, getMatchingPosts } from '../../shared/blog-posts'
 
 function getQueryParam(params: URLSearchParams): string {
@@ -10,20 +10,18 @@ type SearchParamsType = readonly [
   typeof updateQueryParams
 ]
 
-const SearchParamsContext = React.createContext<SearchParamsType | null>(
-  [
-    new URLSearchParams(window.location.search),
-    updateQueryParams
-  ]
-)
+const SearchParamsContext = React.createContext<SearchParamsType | null>(null)
 
 function SearchParamsProvider({ children }: { children: React.ReactNode }) {
-  const [queryParamsState, setQueryParamsState] = useState(new URLSearchParams(window.location.search))
+  const [params, setParams] = useState(new URLSearchParams(window.location.search))
   useEffect(() => {
     const handlePopState = () => {
-      setQueryParamsState((prev) => {
+      setParams((prevParams) => {
         const newParams = new URLSearchParams(window.location.search)
-        return prev.toString() === newParams.toString() ? prev : newParams
+        if (prevParams.toString() !== newParams.toString()) {
+          return newParams
+        }
+        return prevParams
       })
     }
     window.addEventListener('popstate', handlePopState)
@@ -32,35 +30,23 @@ function SearchParamsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const setSearchQuery = useCallback(
-    (...args: Parameters<typeof updateQueryParams>) => {
-      const updatedParams = updateQueryParams(...args)
-      setQueryParamsState((prev) => {
-        return prev.toString() === updatedParams.toString()
-          ? prev
-          : updatedParams
-      })
-      return updatedParams
-    }, [])
-  const value = [queryParamsState, setSearchQuery] as const
-  
+  const setQueryParams = useCallback((...args: Parameters<typeof updateQueryParams>) => {
+    const newParams = updateQueryParams(...args)
+    setParams((prevParams) => {
+      if (prevParams.toString() !== newParams.toString()) {
+        return newParams
+      }
+      return prevParams
+    })
+    return newParams
+  }, [])
+
+  const value = [params, setQueryParams] as SearchParamsType
+
   return (
     <SearchParamsContext.Provider value={value}>
       {children}
     </SearchParamsContext.Provider>
-  )
-}
-
-function App() {
-  return (
-    <div>
-      <SearchParamsProvider>
-        <div>
-          <SearchForm />
-        </div>
-      </SearchParamsProvider>
-      <MatchingPosts />
-    </div>
   )
 }
 
@@ -71,15 +57,25 @@ function useSearchParams() {
   }
   return context
 }
+
+function App() {
+  return (
+    <SearchParamsProvider>
+      <div>
+        <SearchForm />
+        <MatchingPosts />
+      </div>
+    </SearchParamsProvider>
+  )
+}
+
 function SearchForm() {
-  const [queryParams, setQuery] = useSearchParams()
-  console.log('SearchForm queryParams:', queryParams.toString())
-  const query = getQueryParam(queryParams)
+  const [params, setQueryParams] = useSearchParams()
+  const query = getQueryParam(params)
   const words = query.split(' ')
   const isCheckDog = words.includes('dog')
   const isCheckCat = words.includes('cat')
   const isCheckCaterpillar = words.includes('caterpillar')
-
   function handleCheck(tag: string, checked: boolean) {
     const currentTags = query.split(' ').filter(Boolean)
     if (checked) {
@@ -92,12 +88,12 @@ function SearchForm() {
         currentTags.splice(index, 1)
       }
     }
-    setQuery({ query: currentTags.join(' ') }, { replace: true })
+    setQueryParams({ query: currentTags.join(' ') }, { replace: true })
   }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setQuery({ query: query }, { replace: false })
+    setQueryParams({ query }, { replace: false })
   }
   return (
     <form onSubmit={handleSubmit}>
@@ -111,7 +107,7 @@ function SearchForm() {
           className="w-full p-2 border rounded"
           placeholder="Search posts..."
           value={query}
-          onChange={(e) => setQuery({ query: e.target.value }, { replace: true })}
+          onChange={(e) => setQueryParams({ query: e.target.value }, { replace: true })}
         />
       </div>
       <div className="mb-4">
@@ -146,9 +142,8 @@ function SearchForm() {
   )
 }
 function MatchingPosts() {
-  const [queryParams] = useSearchParams()
-  console.log('MatchingPosts queryParams:', queryParams.toString())
-  const query = getQueryParam(queryParams)
+  const [params] = useSearchParams()
+  const query = getQueryParam(params)
   const posts = getMatchingPosts(query)
   return (
     <div className="space-y-4">
@@ -214,10 +209,11 @@ function updateQueryParams(params: Record<string, string | null>, options?: { re
     }
   }
 
+  const newUrl = `?${urlParams.toString()}`
   if (options?.replace) {
-    window.history.replaceState({}, '', `?${urlParams.toString()}`)
+    window.history.replaceState({}, '', newUrl)
   } else {
-    window.history.pushState({}, '', `?${urlParams.toString()}`)
+    window.history.pushState({}, '', newUrl)
   }
 
   return urlParams
