@@ -61,7 +61,7 @@ function Counter({ step }: { step: number }) {
 function App() {
 	const [step, setStep] = useState(1)
 	return (
-		<div className="bg-gray-100 flex flex-col items-center justify-top p-6">
+		<div className="p-6bg-gray-100 flex flex-col items-center justify-top p-6">
 			<form className="mb-6">
 				<div className="flex items-center gap-3">
 					<label htmlFor="step-input" className="text-lg text-gray-700">

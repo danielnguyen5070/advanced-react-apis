@@ -61,7 +61,7 @@ function useSearchParams() {
 function App() {
   return (
     <SearchParamsProvider>
-      <div>
+      <div className='p-6'>
         <SearchForm />
         <MatchingPosts />
       </div>

@@ -41,7 +41,7 @@ function useQueryParams() {
 function App() {
 	const { query, setQuery } = useQueryParams()
 	return (
-		<div>
+		<div className='p-6'>
 			<SearchForm query={query} setQuery={setQuery} />
 			<MatchingPosts query={query} />
 		</div>

@@ -1,19 +1,25 @@
 
+import React, { useSyncExternalStore } from 'react'
+const mediaQuery = '(max-width: 600px)'
+type Callback = () => void
 
-// 💰 this is the mediaQuery we're going to be matching against:
-// const mediaQuery = '(max-width: 600px)'
+function getSnapshot() {
+	return window.matchMedia(mediaQuery).matches
+}
 
-// 🐨 make a getSnapshot function here that returns whether the media query matches
-
-// 🐨 make a subscribe function here which takes a callback function
-// 🐨 create a matchQueryList variable here with the mediaQuery from above (📜 https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList)
-// 🐨 add a change listener to the mediaQueryList which calls the callback
-// 🐨 return a cleanup function which removes the change event listener for the callback
-
+function subscribe(callback: Callback) {
+	const matchQueryList = window.matchMedia(mediaQuery)
+	matchQueryList.addEventListener('change', callback)
+	return () => {
+		matchQueryList.removeEventListener('change', callback)
+	}
+}
 function NarrowScreenNotifier() {
-	// 🐨 assign this to useSyncExternalStore with the subscribe and getSnapshot functions above
-	const isNarrow = false
-	return isNarrow ? 'You are on a narrow screen' : 'You are on a wide screen'
+	const isNarrow = useSyncExternalStore(
+		subscribe,
+		getSnapshot
+	)
+	return isNarrow ? <div className='bg-amber-300'>You are on a narrow screen</div> : <div className='bg-blue-300'>you are on wide screen</div>
 }
 
 function App() {
@@ -21,6 +27,3 @@ function App() {
 }
 
 export default App
-
-// @ts-expect-error 🚨 this is for the test
-window.__epicReactRoot = root

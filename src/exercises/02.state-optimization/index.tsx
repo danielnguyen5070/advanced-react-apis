@@ -38,7 +38,7 @@ function App() {
 
 	console.log('App rendered with query:', query)
 	return (
-		<div>
+		<div className='p-6'>
 			<SearchForm query={query} setQuery={setQuery} />
 			<MatchingPosts query={query} />
 		</div>
