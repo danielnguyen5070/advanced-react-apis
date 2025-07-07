@@ -55,12 +55,7 @@ function App() {
 					/>
 				</div>
 			</div>
-			{/* display in bottom screen */}
-			<div className='bottom-0 right-0 bg-white p-4'>
-				<p className="text-sm text-gray-500">
-					Note: This example is a simplified version of a chat application. The "Scroll to Top" and "Scroll to Bottom" buttons are placeholders and do not have functionality implemented. The "Focus Messages" button is also a placeholder and does not perform any action. The messages are randomly generated from a predefined list.
-				</p>
-			</div>
+			<Footer />
 		</div>
 	)
 }
@@ -78,6 +73,9 @@ function EditableText({
 	return edit ? (
 		<form
 			method="post"
+			onSubmit={(e) => {
+				e.preventDefault()
+			}}
 		>
 			<input
 				required
@@ -101,4 +99,24 @@ function EditableText({
 		</button>
 	)
 }
+
+function Footer() {
+	const isMobile = true
+	return (
+		<div className='bottom-0 right-0 bg-white p-4'>
+			{
+				isMobile ? (
+					<p className="text-sm text-gray-500">
+						Note: This example is a simplified version of a chat application. The "Scroll to Top" and "Scroll to Bottom" buttons are placeholders and do not have functionality implemented. The "Focus Messages" button is also a placeholder and does not perform any action. The messages are randomly generated from a predefined list.
+					</p>
+				) : (
+					<p className="text-sm text-gray-500">
+						Note: This example is a simplified version of a chat application.
+					</p>
+				)
+			}
+		</div>
+	)
+}
+
 export default App
