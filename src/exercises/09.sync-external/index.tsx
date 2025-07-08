@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useSyncExternalStore } from 'react'
 import { allMessages } from './messages'
-import { flushSync } from 'react-dom'
 
 type ScrollableRef = {
 	scrollToTop: () => void
@@ -42,6 +41,7 @@ function App() {
 	const scrollToBottom = () => {
 		scrollableRef.current?.scrollToBottom()
 	}
+
 	return (
 		<div className="flex flex-col items-center justify-between h-screen">
 			<div className="max-w-md mx-auto p-4 space-y-4 font-sans">
@@ -107,9 +107,7 @@ function EditableText({
 			method="post"
 			onSubmit={(e) => {
 				e.preventDefault()
-				flushSync(() => {
-					setEdit(false)
-				})
+				setEdit(false)
 				buttonRef.current?.focus()
 			}}
 		>
@@ -121,12 +119,10 @@ function EditableText({
 				ref={editRef}
 				onChange={(e) => {
 					setValue(e.target.value)
+					buttonRef.current?.focus()
 				}}
 				onBlur={() => {
-					flushSync(() => {
-						setEdit(false)
-					})
-					buttonRef.current?.focus()
+					setEdit(false)
 				}}
 				autoFocus
 				className="border rounded px-2 py-1 w-full text-gray-900"
@@ -137,10 +133,8 @@ function EditableText({
 			ref={buttonRef}
 			type="button"
 			onClick={() => {
-				flushSync(() => {
-					setEdit(true)
-				})
-				editRef.current?.select()
+				setEdit(true)
+				editRef.current?.focus()
 			}}
 			className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
 		>
@@ -149,18 +143,38 @@ function EditableText({
 	)
 }
 
+const queryStr = '(max-width: 648px)'
+function useMediaQuery(query: string) {
+	const mediaQuery = window.matchMedia(query)
+
+	function subcribe(callback: () => void) {
+		mediaQuery.addEventListener('change', callback)
+		return () => {
+			mediaQuery.removeEventListener('change', callback)
+		}
+	}
+
+	function getSnapshot() {
+		console.log('getSnapshot called')
+		return mediaQuery.matches
+	}
+
+	return useSyncExternalStore(subcribe, getSnapshot)
+}
+
+
 function Footer() {
-	const isMobile = true
+	const isMobile = useMediaQuery(queryStr)
 	return (
 		<div className='bottom-0 right-0 bg-white p-4'>
 			{
 				isMobile ? (
 					<p className="text-sm text-gray-500">
-						Note: This example is a simplified version of a chat application. The "Scroll to Top" and "Scroll to Bottom" buttons are placeholders and do not have functionality implemented. The "Focus Messages" button is also a placeholder and does not perform any action. The messages are randomly generated from a predefined list.
+						Note: This example is a simplified version of a chat application.
 					</p>
 				) : (
 					<p className="text-sm text-gray-500">
-						Note: This example is a simplified version of a chat application.
+						Note: This example is a simplified version of a chat application. The "Scroll to Top" and "Scroll to Bottom" buttons are placeholders and do not have functionality implemented. The "Focus Messages" button is also a placeholder and does not perform any action. The messages are randomly generated from a predefined list.
 					</p>
 				)
 			}
